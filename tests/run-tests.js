@@ -15,55 +15,88 @@ const where = (qid, pool) => (pool || ids).filter((id) => Q(qid).test(data.BY_ID
 
 console.log('Cast design');
 
-test('16 people, 8 men and 8 women, unique names with initials A–P', () => {
-  assert.strictEqual(ids.length, 16);
-  assert.strictEqual(where('man').length, 8);
-  assert.strictEqual(where('woman').length, 8);
-  const initials = data.BOARD.map((c) => c.name[0]).join('');
-  assert.strictEqual(initials, 'ABCDEFGHIJKLMNOP');
+const tree = data.STRATEGY.tree;
+function internalNodes(node, depth, out) {
+  out = out || [];
+  if (data.isLeaf(node)) return out;
+  out.push({ node, depth: depth || 0 });
+  internalNodes(node.yes, (depth || 0) + 1, out);
+  internalNodes(node.no, (depth || 0) + 1, out);
+  return out;
+}
+const nodes = internalNodes(tree);
+
+test('24 people, 12 men and 12 women, unique names with initials A–X', () => {
+  assert.strictEqual(ids.length, 24);
+  assert.strictEqual(where('man').length, 12);
+  assert.strictEqual(where('woman').length, 12);
+  assert.strictEqual(data.BOARD.map((c) => c.name[0]).join(''), 'ABCDEFGHIJKLMNOPQRSTUVWX');
 });
 
-test('every strategy question halves its group, at every step, in the planned order', () => {
-  ['man', 'woman'].forEach((g) => {
-    let groups = [where(g)];
-    data.STRATEGY[g].forEach((qid) => {
-      const next = [];
-      groups.forEach((grp) => {
-        const yes = where(qid, grp);
-        assert.strictEqual(yes.length * 2, grp.length, `${qid} should halve ${grp.join(',')}`);
-        next.push(yes, grp.filter((id) => yes.indexOf(id) < 0));
-      });
-      groups = next;
-    });
-    groups.forEach((grp) => assert.strictEqual(grp.length, 1));
+test('the decision tree has every person exactly once as a leaf', () => {
+  assert.deepStrictEqual(data.leavesOf(tree).slice().sort(), ids.slice().sort());
+  assert.strictEqual(nodes.length, 23); // a binary tree with 24 leaves has 23 questions
+});
+
+test('every question in the tree sends exactly the right people each way', () => {
+  nodes.forEach(({ node }) => {
+    const people = data.leavesOf(node);
+    const yes = where(node.q, people).sort();
+    assert.deepStrictEqual(yes, data.leavesOf(node.yes).slice().sort(), `${node.q} at ${people.join(',')}`);
   });
 });
 
-test('within each gender, the 3 strategy traits form all 8 combinations (so any order works)', () => {
-  ['man', 'woman'].forEach((g) => {
-    const seen = new Set(where(g).map((id) => data.STRATEGY[g].map((qid) => (Q(qid).test(data.BY_ID[id]) ? 1 : 0)).join('')));
-    assert.strictEqual(seen.size, 8);
+test('every question in the tree halves its group as evenly as possible (24→12→6→3→1|2→1)', () => {
+  nodes.forEach(({ node }) => {
+    const n = data.leavesOf(node).length;
+    const y = data.leavesOf(node.yes).length;
+    assert.ok(data.isHalving(n, y), `${node.q}: ${n} -> ${y}|${n - y}`);
   });
 });
 
-test('every character is found in exactly 4 strategy questions', () => {
+test('every person is found in 4 or 5 questions (8 in 4, 16 in 5)', () => {
+  const byLen = {};
   ids.forEach((id) => {
-    const answers = data.strategyPath(id).map(([qid, yes]) => ({ qid, yes }));
-    assert.strictEqual(answers.length, 4);
-    assert.deepStrictEqual(data.candidates(answers), [id]);
+    const path = data.strategyPath(id);
+    byLen[path.length] = (byLen[path.length] || 0) + 1;
+    assert.deepStrictEqual(data.candidates(path.map(([qid, yes]) => ({ qid, yes }))), [id]);
+  });
+  assert.deepStrictEqual(byLen, { 4: 8, 5: 16 });
+  assert.strictEqual(data.MAX_QUESTIONS, 5);
+});
+
+test('the next question depends on the previous answer (yes/no branches ask different things)', () => {
+  nodes.forEach(({ node }) => {
+    if (!data.isLeaf(node.yes) && !data.isLeaf(node.no)) {
+      assert.notStrictEqual(node.yes.q, node.no.q, `after ${node.q}`);
+    }
   });
 });
 
-test('decoys: some women wear hats and glasses, some men wear earrings or a necklace', () => {
-  const women = where('woman'), men = where('man');
-  assert.strictEqual(where('hat', women).length, 3);
-  assert.strictEqual(where('glasses', women).length, 3);
-  assert.strictEqual(where('earrings', men).length, 2);
-  assert.strictEqual(where('necklace', men).length, 1);
+test('no question is asked twice on the same path', () => {
+  ids.forEach((id) => {
+    const qs = data.strategyPath(id).map(([qid]) => qid);
+    assert.strictEqual(new Set(qs).size, qs.length, id + ': ' + qs.join(' > '));
+  });
 });
 
-test('decoy traits are not perfect first questions (only "man"/"woman" split 8|8)', () => {
-  const perfect = data.QUESTIONS.filter((q) => where(q.id).length === 8).map((q) => q.id);
+test('the four questions on the 3rd level are all different', () => {
+  const level2 = nodes.filter((x) => x.depth === 2).map((x) => x.node.q);
+  assert.strictEqual(level2.length, 4);
+  assert.strictEqual(new Set(level2).size, 4, level2.join(','));
+});
+
+test('decoys: hats, glasses, earrings and necklaces also appear where they are not asked', () => {
+  const women = where('woman'), men = where('man');
+  assert.strictEqual(where('hat', women).length, 4);
+  assert.strictEqual(where('glasses', women).length, 4);
+  assert.strictEqual(where('earrings', men).length, 3);
+  assert.strictEqual(where('necklace', men).length, 2);
+  assert.ok(where('stripes').length >= 6);
+});
+
+test('only "man"/"woman" split all 24 into 12|12', () => {
+  const perfect = data.QUESTIONS.filter((q) => where(q.id).length === 12).map((q) => q.id);
   assert.deepStrictEqual(perfect.sort(), ['man', 'woman']);
 });
 
@@ -74,21 +107,30 @@ test('a woman with a hat never also has a bow (bow would be hidden)', () => {
   });
 });
 
-test('bald people have no hat (so "bald?" is answerable from the picture)', () => {
-  where('bald').forEach((id) => assert.ok(!data.BY_ID[id].hat, id));
+test('bald people have no hat and no beard (so hair questions are clear)', () => {
+  where('bald').forEach((id) => assert.ok(!data.BY_ID[id].hat && !data.BY_ID[id].beard, id));
 });
 
 test('no two characters look the same to the question list', () => {
   const sigs = new Set(ids.map((id) => data.QUESTIONS.map((q) => (q.test(data.BY_ID[id]) ? 1 : 0)).join('')));
-  assert.strictEqual(sigs.size, 16);
+  assert.strictEqual(sigs.size, 24);
 });
 
-test('recommend() follows the strategy from the start', () => {
+test('recommend() follows the tree', () => {
   assert.strictEqual(data.recommend([]), 'man');
   assert.strictEqual(data.recommend([{ qid: 'man', yes: true }]), 'hat');
+  assert.strictEqual(data.recommend([{ qid: 'man', yes: true }, { qid: 'hat', yes: true }]), 'glasses');
+  assert.strictEqual(data.recommend([{ qid: 'man', yes: true }, { qid: 'hat', yes: false }]), 'beard');
   assert.strictEqual(data.recommend([{ qid: 'man', yes: false }]), 'earrings');
-  assert.strictEqual(data.recommend([{ qid: 'man', yes: false }, { qid: 'earrings', yes: true }]), 'necklace');
-  assert.strictEqual(data.recommend(data.strategyPath('grace').map(([qid, yes]) => ({ qid, yes }))), null);
+  assert.strictEqual(data.recommend([{ qid: 'woman', yes: true }, { qid: 'earrings', yes: false }]), 'bow');
+  ids.forEach((id) => {
+    const path = data.strategyPath(id);
+    for (let i = 0; i < path.length; i++) {
+      const so = path.slice(0, i).map(([qid, yes]) => ({ qid, yes }));
+      assert.strictEqual(data.recommend(so), path[i][0], `${id} step ${i + 1}`);
+    }
+    assert.strictEqual(data.recommend(path.map(([qid, yes]) => ({ qid, yes }))), null);
+  });
 });
 
 test('recommend() still finds a halving question after an off-strategy start', () => {
@@ -164,7 +206,7 @@ test('flips are tracked per player and shown to the opponent as a count', () => 
   let s = playToPlay();
   s = game.apply(s, 'host', { type: 'flip', ids: ['arjun', 'nate', 'nope'], down: true }).state;
   assert.deepStrictEqual(s.players.host.flipped, ['arjun', 'nate']);
-  assert.strictEqual(game.viewFor(s, 'guest').opp.remaining, 14);
+  assert.strictEqual(game.viewFor(s, 'guest').opp.remaining, 22);
   s = game.apply(s, 'host', { type: 'flip', id: 'arjun', down: false }).state;
   assert.deepStrictEqual(s.players.host.flipped, ['nate']);
 });
@@ -196,11 +238,11 @@ test('rematch resets the round and alternates who goes first', () => {
 test('solo practice: computer hides someone, play starts at once, turn stays with you', () => {
   let s = game.create({ solo: true, hostName: 'Ava', random: () => 0.99 });
   assert.strictEqual(s.phase, 'play');
-  assert.strictEqual(s.players.guest.secret, 'priya');
+  assert.strictEqual(s.players.guest.secret, 'ximena');
   s = game.apply(s, 'host', { type: 'ask', qid: 'man' }).state;
   assert.strictEqual(s.turn, 'host');
   assert.ok(game.apply(s, 'host', { type: 'ask', text: 'Happy?' }).error, 'no typed questions in solo');
-  s = game.apply(s, 'host', { type: 'guess', id: 'priya' }).state;
+  s = game.apply(s, 'host', { type: 'guess', id: 'ximena' }).state;
   assert.strictEqual(s.winner, 'host');
   s = game.apply(s, 'host', { type: 'rematch', random: () => 0 }).state;
   assert.strictEqual(s.phase, 'play');

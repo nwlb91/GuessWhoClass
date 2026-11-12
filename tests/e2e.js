@@ -101,7 +101,7 @@ async function shot(page, name) {
     await guest.waitForSelector('.last-box');
     assert((await guest.textContent('.last-box .qa b')).trim() === 'Yes', 'auto answer: Hiro is a man');
     await guest.click('[data-action=auto-flip]');
-    assert(await remaining(guest) === 8, 'auto-flip leaves 8 faces');
+    assert(await remaining(guest) === 12, 'auto-flip leaves 12 faces');
 
     // Host's turn: a typed question that the student answers.
     await host.waitForSelector('.ask-box', { timeout: 10000 });
@@ -114,9 +114,9 @@ async function shot(page, name) {
     await host.waitForSelector('.last-box', { timeout: 10000 });
     assert((await host.textContent('.last-box .qa b')).trim() === 'Yes', 'host receives the typed answer');
 
-    // Student continues: hat (no) -> glasses (yes) -> beard (no) -> Hiro
-    const hostAsks = ['earrings', 'necklace', 'bow'];
-    for (const [i, qid] of ['hat', 'glasses', 'beard'].entries()) {
+    // Student follows the tree: man (yes) -> hat (no) -> beard (no) -> bald (no) -> Hiro
+    const hostAsks = ['earrings', 'bow', 'hair-red'];
+    for (const [i, qid] of ['hat', 'beard', 'bald'].entries()) {
       await guest.waitForSelector('.ask-box', { timeout: 10000 });
       await ask(guest, qid);
       await guest.waitForSelector(`.last-box`, { timeout: 10000 });
@@ -172,11 +172,20 @@ async function shot(page, name) {
     await guest.click('[data-action=lock-in]');
     await host.waitForSelector('.ask-box', { timeout: 10000 });
     assert((await host.textContent('.chip.best')).includes('Man?'), 'hint stars "Man?" as the best first question');
-    assert((await host.textContent('.chip.best .split')).trim() === '8|8', 'hint shows the 8|8 split');
+    assert((await host.textContent('.chip.best .split')).trim() === '12|12', 'hint shows the 12|12 split');
     await shot(host, '09-host-hints');
-    await ask(host, 'man');
+    await ask(host, 'man');                                   // guest has Kofi: a man
     await host.click('[data-action=auto-flip]');
-    await host.waitForSelector('.waiting-box');
+    await guest.waitForSelector('.ask-box', { timeout: 10000 });
+    await ask(guest, 'man');                                  // host has Mei
+    await host.waitForSelector('.ask-box .chip.best', { timeout: 10000 });
+    assert((await host.getAttribute('.chip.best', 'data-q')) === 'hat', 'after "man? yes" the hint is "Hat?"');
+    await ask(host, 'hat');
+    await host.click('[data-action=auto-flip]');
+    await guest.waitForSelector('.ask-box', { timeout: 10000 });
+    await ask(guest, 'earrings');
+    await host.waitForSelector('.ask-box .chip.best', { timeout: 10000 });
+    assert((await host.getAttribute('.chip.best', 'data-q')) === 'beard', 'after "hat? no" the hint changes to "Beard?"');
 
     console.log('Host ends the game');
     await host.click('[data-action=menu]');
@@ -192,13 +201,15 @@ async function shot(page, name) {
     await solo.click('[data-action=solo]');
     await solo.waitForSelector('.ask-box');
     await solo.check('#top-actions input[data-action=toggle-hints]', { force: true });
-    for (let i = 0; i < 4; i++) {
+    let asked = 0;
+    while (await solo.$('.chip.best') && asked < 6) {
       const best = await solo.getAttribute('.chip.best', 'data-q');
       await solo.click(`.chip[data-q="${best}"]`);
       await solo.click('[data-action=auto-flip]');
+      asked++;
     }
     const soloLeft = await solo.$$eval('#board .card:not(.down)', (els) => els.map((e) => e.dataset.id));
-    assert(soloLeft.length === 1, 'following the hints finds the computer’s person in 4 questions');
+    assert(soloLeft.length === 1 && asked <= 5, `following the hints finds the computer’s person in ${asked} questions`);
     await solo.click('[data-action=start-guess]');
     await solo.click(`.card[data-id=${soloLeft[0]}]`);
     await solo.click('.modal .btn.primary');

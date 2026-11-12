@@ -1,10 +1,11 @@
-/* Builds the decision tree, decoy summary and trait table on the teacher guide. */
+/* Builds the decision tree, first-question splits and path table on the teacher guide. */
 (function () {
   'use strict';
   var data = window.WH.data;
   var avatar = window.WH.avatar;
-  var S = data.STRATEGY;
   var Q = data.Q_BY_ID;
+  var TREE = data.STRATEGY.tree;
+  var TOTAL = data.BOARD.length;
 
   function el(tag, cls, html) {
     var e = document.createElement(tag);
@@ -12,83 +13,68 @@
     if (html != null) e.innerHTML = html;
     return e;
   }
-
-  // ---------- decision tree on a 16-column grid ----------
-  // Each tree node covers a contiguous run of leaves. Leaves are ordered so that
-  // "yes" branches sit on the left.
-  var men = data.BOARD.filter(function (c) { return c.gender === 'man'; });
-  var women = data.BOARD.filter(function (c) { return c.gender === 'woman'; });
-
-  function order(list, qids) {
-    // sort by the answers to qids: yes before no, most significant first
-    return list.slice().sort(function (a, b) {
-      for (var i = 0; i < qids.length; i++) {
-        var x = Q[qids[i]].test(a) ? 0 : 1, y = Q[qids[i]].test(b) ? 0 : 1;
-        if (x !== y) return x - y;
-      }
-      return 0;
-    });
-  }
-  var leaves = order(men, S.man).concat(order(women, S.woman));
-
-  var tree = document.getElementById('tree');
-  function place(node, row, start, span) {
-    node.style.gridRow = String(row);
-    node.style.gridColumn = (start + 1) + ' / span ' + span;
-    tree.appendChild(node);
-  }
-  function qNode(qid, count, row, start, span) {
-    var n = el('div', 'tnode', '<span class="tq">' + Q[qid].label + '</span><span class="tcount">' + count + ' left</span>');
-    place(n, row, start, span);
-    var br = el('div', 'tbranch', '<span class="ty">yes</span><span class="tn">no</span>');
-    place(br, row + 1, start, span);
+  function face(id, cls) {
+    return '<div class="tface' + (cls ? ' ' + cls : '') + '">' + avatar.svg(data.BY_ID[id], { title: false }) + '</div>';
   }
 
-  qNode('man', 16, 1, 0, 16);
-  for (var lvl = 0; lvl < 3; lvl++) {
-    var span = 8 >> lvl;
-    for (var start = 0; start < 16; start += span) {
-      var g = start < 8 ? 'man' : 'woman';
-      qNode(S[g][lvl], span, 3 + lvl * 2, start, span);
+  // ---------- decision tree ----------
+  // Each subtree is drawn on a grid with one column per person. A question sits
+  // over the columns of everyone it still has to tell apart; a bracket under it
+  // runs from the middle of its "yes" people to the middle of its "no" people.
+  function drawTree(container, node) {
+    var cols = data.leavesOf(node).length;
+    container.style.gridTemplateColumns = 'repeat(' + cols + ', minmax(58px, 1fr))';
+    container.style.minWidth = (cols * 62) + 'px';
+    function place(item, row, start, span) {
+      item.style.gridRow = String(row);
+      item.style.gridColumn = (start + 1) + ' / span ' + span;
+      container.appendChild(item);
     }
+    (function walk(n, depth, start) {
+      if (data.isLeaf(n)) {
+        var c = data.BY_ID[n];
+        place(el('div', 'tleaf', face(n) + '<b>' + c.name + '</b><span class="tdepth">' + depth + ' questions</span>'),
+          depth * 2 + 1, start, 1);
+        return;
+      }
+      var y = data.leavesOf(n.yes).length;
+      var no = data.leavesOf(n.no).length;
+      var span = y + no;
+      place(el('div', 'tnode', '<span class="tq">' + Q[n.q].label + '</span><span class="tcount">' + span + ' left</span>'),
+        depth * 2 + 1, start, span);
+      var br = el('div', 'tbranch', '<span class="ty">yes</span><span class="tn">no</span>');
+      br.style.marginLeft = ((y / 2) / span * 100) + '%';
+      br.style.marginRight = ((no / 2) / span * 100) + '%';
+      place(br, depth * 2 + 2, start, span);
+      walk(n.yes, depth + 1, start);
+      walk(n.no, depth + 1, start + y);
+    })(node, 1, 0);
   }
-  leaves.forEach(function (c, i) {
-    var leaf = el('div', 'tleaf', '<div class="tface">' + avatar.svg(c, { title: false }) + '</div><b>' + c.name + '</b>');
-    place(leaf, 9, i, 1);
-  });
+  drawTree(document.getElementById('tree-men'), TREE.yes);
+  drawTree(document.getElementById('tree-women'), TREE.no);
 
-  // ---------- decoys ----------
-  var decoys = [
-    ['hat', 'woman', 'Women in hats'],
-    ['glasses', 'woman', 'Women in glasses'],
-    ['earrings', 'man', 'Men with earrings'],
-    ['necklace', 'man', 'Man with a necklace']
-  ];
-  var box = document.getElementById('decoys');
-  decoys.forEach(function (d) {
-    var people = data.BOARD.filter(function (c) { return c.gender === d[1] && Q[d[0]].test(c); });
-    var total = data.BOARD.filter(function (c) { return Q[d[0]].test(c); }).length;
-    var card = el('div', 'decoy',
-      '<div class="decoy-faces">' + people.map(function (c) {
-        return '<figure><div class="tface">' + avatar.svg(c, { title: false }) + '</div><figcaption>' + c.name + '</figcaption></figure>';
-      }).join('') + '</div>' +
-      '<div><b>' + d[2] + '</b><br><span class="muted small">“' + Q[d[0]].label + '” splits the 16 into ' + total + ' | ' + (16 - total) + '</span></div>');
-    box.appendChild(card);
-  });
+  // ---------- tempting first questions ----------
+  var ids = data.BOARD.map(function (c) { return c.id; });
+  var tempting = ['man', 'hat', 'glasses', 'earrings', 'necklace', 'stripes', 'hair-black', 'beard', 'bow'];
+  var box = document.getElementById('first-splits');
+  box.innerHTML = tempting.map(function (qid) {
+    var sp = data.split(qid, ids);
+    var perfect = sp.yes === sp.no;
+    return '<div class="fs-row' + (perfect ? ' perfect' : '') + '"><span class="fs-q">' + Q[qid].label + '</span>' +
+      '<span class="fs-bar"><span class="fs-yes" style="width:' + (sp.yes / TOTAL * 100) + '%">' + sp.yes + '</span>' +
+      '<span class="fs-no">' + sp.no + '</span></span>' +
+      '<span class="fs-note">' + (perfect ? 'perfect half' : 'flips down ' + Math.min(sp.yes, sp.no) + ' or ' + Math.max(sp.yes, sp.no)) + '</span></div>';
+  }).join('');
 
-  // ---------- trait table ----------
-  var cols = ['hat', 'glasses', 'beard', 'earrings', 'necklace', 'bow'];
-  var table = document.getElementById('traits');
-  var head = '<thead><tr><th></th><th>Name</th><th>Man / woman</th>' +
-    cols.map(function (q) { return '<th>' + Q[q].label.replace('?', '') + '</th>'; }).join('') + '</tr></thead>';
-  var body = '<tbody>' + leaves.map(function (c) {
-    var keySet = S[c.gender];
-    return '<tr><td><div class="tface tiny">' + avatar.svg(c, { title: false }) + '</div></td><td><b>' + c.name + '</b></td><td>' + c.gender + '</td>' +
-      cols.map(function (q) {
-        if (!Q[q].test(c)) return '<td></td>';
-        var key = keySet.indexOf(q) >= 0;
-        return '<td><span class="' + (key ? 'key-dot' : 'decoy-dot') + '" title="' + (key ? 'strategy feature' : 'decoy') + '"></span></td>';
-      }).join('') + '</tr>';
-  }).join('') + '</tbody>';
-  table.innerHTML = head + body;
+  // ---------- each person's path ----------
+  var table = document.getElementById('paths');
+  var rows = data.leavesOf(TREE).map(function (id) {
+    var c = data.BY_ID[id];
+    var path = data.strategyPath(id);
+    var chips = path.map(function (p) {
+      return '<span class="pchip ' + (p[1] ? 'yes' : 'no') + '">' + Q[p[0]].label.replace('?', '') + ' ' + (p[1] ? '✓' : '✗') + '</span>';
+    }).join('<span class="parrow">›</span>');
+    return '<tr><td>' + face(id, 'tiny') + '</td><td><b>' + c.name + '</b></td><td class="ptd">' + chips + '</td><td>' + path.length + '</td></tr>';
+  }).join('');
+  table.innerHTML = '<thead><tr><th></th><th>Name</th><th>Questions that find them</th><th>#</th></tr></thead><tbody>' + rows + '</tbody>';
 })();

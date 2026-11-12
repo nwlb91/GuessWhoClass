@@ -105,15 +105,16 @@
       title: 'How to play',
       wide: true,
       html: `<ol class="howto">
-        <li><b>Pick a mystery person.</b> Each player secretly chooses one of the 16 faces.</li>
+        <li><b>Pick a mystery person.</b> Each player secretly chooses one of the ${TOTAL} faces.</li>
         <li><b>Take turns asking yes/no questions</b> about the other player's mystery person. Tap a question from the list
           (the game answers it automatically) or type your own (the other player answers it).</li>
         <li><b>Flip down faces that don't match the answer.</b> Tap a face to flip it, or use the
           <i>Flip them down for me</i> button.</li>
         <li><b>Make a final guess</b> on your turn when you know who it is. Right? You win. Wrong? You lose the round!</li>
       </ol>
-      <p class="challenge">🧠 <b>Challenge:</b> there are 16 people. Can you always find the mystery person with just
-      <b>4</b> questions? Hint: try to pick questions where about half the faces would flip down — whatever the answer is.</p>`
+      <p class="challenge">🧠 <b>Challenge:</b> there are ${TOTAL} people. Can you always find the mystery person with
+      <b>${data.MAX_QUESTIONS}</b> questions or fewer? Hint: try to pick questions where about half the faces would flip
+      down — whatever the answer is.</p>`
     });
   }
 
@@ -395,7 +396,7 @@
         <header class="hero">
           <div class="hero-faces" aria-hidden="true">${heroFaces(['imani', 'nate', 'lucia', 'arjun', 'mei', 'felix'])}</div>
           <h1 class="logo">Who’s <span>Hiding?</span></h1>
-          <p class="tagline">16 faces. 1 mystery person. Yes-or-no questions only.<br>How few questions do you need?</p>
+          <p class="tagline">${TOTAL} faces. 1 mystery person. Yes-or-no questions only.<br>How few questions do you need?</p>
         </header>
         <section class="home-card">
           <label class="field"><span>Your name</span>
@@ -877,13 +878,13 @@
     const myGuess = v.log.find((e) => e.kind === 'guess' && e.seat === v.mySeat);
     const counts = steps.filter((s) => s.count != null).map((s) => s.count);
     const last = counts[counts.length - 1];
-    const halvedEveryTime = counts.every((c, i) => c === TOTAL >> i);
+    const halvedEveryTime = counts.every((c, i) => i === 0 || data.isHalving(counts[i - 1], c));
     const n = counts.length - 1;
     if (myGuess && myGuess.correct) {
       if (halvedEveryTime && last === 1 && !typed) {
-        return `🌟 <b>Perfect halving!</b> ${counts.join(' → ')}. Every question cut the group exactly in half — that’s a <b>binary search</b>.`;
+        return `🌟 <b>Perfect halving!</b> ${counts.join(' → ')}. Every question cut the group in half (as evenly as it could be cut) — that’s a <b>binary search</b>.`;
       }
-      if (last === 1) return `You found them in <b>${v.me.asked}</b> questions. Questions that cut the group exactly in half always find the mystery person in <b>4</b>.`;
+      if (last === 1) return `You found them in <b>${v.me.asked}</b> questions. Questions that cut the group in half always find the mystery person in <b>${data.MAX_QUESTIONS}</b> or fewer.`;
       return `Lucky guess! <b>${last}</b> people were still possible, so you had a 1-in-${last} chance.`;
     }
     if (myGuess && !myGuess.correct) {

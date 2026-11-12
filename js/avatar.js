@@ -14,7 +14,7 @@
     red: '#E2504F', orange: '#F0873A', yellow: '#F3C233', green: '#3DAA66',
     teal: '#22AFAE', blue: '#3E7FDB', purple: '#8C5AD6', pink: '#EB6EA9'
   };
-  var NECKLACE = { pearls: '#FBF7EE', gold: '#E2B02E', turquoise: '#2EC4C0' };
+  var NECKLACE = { pearls: '#FBF7EE', gold: '#E2B02E', turquoise: '#2EC4C0', coral: '#F2775F' };
   var GOLD = '#E2B02E';
   var INK = '#2B2B2B';
 
@@ -168,6 +168,31 @@
     return out;
   }
 
+  // Left edge of the shirt (the cubic from (8,111) up to (43,85)) at height y.
+  function shirtLeftX(y) {
+    var p = [[8, 111], [10, 93], [26, 85], [43, 85]];
+    var lo = 0, hi = 1;
+    for (var i = 0; i < 30; i++) {           // y falls steadily as t grows
+      var t = (lo + hi) / 2, u = 1 - t;
+      var yt = u * u * u * p[0][1] + 3 * u * u * t * p[1][1] + 3 * u * t * t * p[2][1] + t * t * t * p[3][1];
+      if (yt > y) lo = t; else hi = t;
+    }
+    var tt = (lo + hi) / 2, v = 1 - tt;
+    return v * v * v * p[0][0] + 3 * v * v * tt * p[1][0] + 3 * v * tt * tt * p[2][0] + tt * tt * tt * p[3][0];
+  }
+
+  function stripes(c) {
+    if (!c.stripes) return '';
+    var out = '';
+    [93, 99.5, 106].forEach(function (y0) {
+      var y1 = y0 + 3.2;
+      var a = shirtLeftX(y0), b = shirtLeftX(Math.min(y1, 110.5));
+      out += '<path fill="#FFFFFF" opacity="0.88" d="M' + a.toFixed(1) + ' ' + y0 + ' L' + (100 - a).toFixed(1) + ' ' + y0 +
+        ' L' + (100 - b).toFixed(1) + ' ' + y1 + ' L' + b.toFixed(1) + ' ' + y1 + ' Z"/>';
+    });
+    return out;
+  }
+
   function quadPoint(t, p0, p1, p2) {
     var u = 1 - t;
     return [u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0], u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1]];
@@ -262,6 +287,7 @@
       '<rect x="43" y="68" width="14" height="20" fill="' + skinDk + '"/>',
       '<path fill="' + shirt + '" stroke="' + shade(shirt, -0.25) + '" stroke-width="1" d="M8 111 C10 93 26 85 43 85 Q50 95 57 85 C74 85 90 93 92 111 Z"/>',
       '<path fill="none" stroke="' + shade(shirt, -0.25) + '" stroke-width="1" d="M43 85 Q50 95 57 85"/>',
+      stripes(c),
       necklace(c),
       hairCol ? hairLocks(c, hairCol) : '',
       // head

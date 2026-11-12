@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Teacher Guide — Who’s Hiding?</title>
-  <meta name="description" content="The 4-question halving strategy behind Who’s Hiding?, with the full decision tree and lesson ideas.">
+  <meta name="description" content="The halving strategy behind Who’s Hiding?, with the full decision tree and lesson ideas.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236C4CF1'/%3E%3Ctext x='50' y='72' font-size='64' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3E%3F%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,54 +24,68 @@
   <main class="guide-main">
     <section class="intro">
       <p class="eyebrow">Teacher guide · strategy spoilers</p>
-      <h1>Find anyone in 4 questions</h1>
-      <p class="lead">There are <b>16</b> faces. A yes/no question that splits the faces still standing exactly in half
-        means every answer leaves half as many: <b>16 → 8 → 4 → 2 → 1</b>. Four halvings, because 2 × 2 × 2 × 2 = 16.
-        That’s <b>binary search</b>. The faces were designed so the halving questions are easy to remember.</p>
+      <h1>Find anyone in 5 questions or fewer</h1>
+      <p class="lead">There are <b>24</b> faces. A yes/no question that splits the faces still standing in half means
+        every answer leaves half as many: <b>24 → 12 → 6 → 3 → 2 → 1</b>. That’s <b>binary search</b>. Because 24 isn’t
+        a power of 2, the group of 3 can only split into 1 and 2, so some people are found in 4 questions and the rest
+        in 5. Each question depends on the answers before it, so there’s no fixed list to memorize. Students follow
+        the tree below.</p>
     </section>
 
     <section class="strategy-card" aria-label="The strategy">
       <div class="step-1">
         <span class="num">1</span>
-        <div><b class="q">“Is it a man?”</b><span class="muted">8 men, 8 women</span></div>
+        <div><b class="q">“Is it a man?”</b><span class="muted">12 men, 12 women</span></div>
       </div>
       <div class="branches">
         <div class="branch man">
-          <div class="branch-head">If it’s a <b>man</b>, ask in order:</div>
-          <ol start="2"><li><b>Hat?</b></li><li><b>Glasses?</b></li><li><b>Beard?</b></li></ol>
-          <p class="mnemonic">Read his face from the top down: hat, glasses, beard.</p>
+          <div class="branch-head">Yes, a man: ask <b>“Hat?”</b></div>
+          <ul class="sub">
+            <li><span class="ans yes">hat</span> look at his eyes: <b>Glasses?</b>
+              <ul><li><span class="ans yes">glasses</span> <b>Beard?</b></li><li><span class="ans no">no glasses</span> <b>Earrings?</b></li></ul></li>
+            <li><span class="ans no">no hat</span> look at his chin: <b>Beard?</b>
+              <ul><li><span class="ans yes">beard</span> <b>Gray hair?</b></li><li><span class="ans no">no beard</span> <b>Bald?</b></li></ul></li>
+          </ul>
         </div>
         <div class="branch woman">
-          <div class="branch-head">If it’s a <b>woman</b>, ask in order:</div>
-          <ol start="2"><li><b>Earrings?</b></li><li><b>Necklace?</b></li><li><b>Bow in her hair?</b></li></ol>
-          <p class="mnemonic">Earrings and a necklace, then tie it up with a bow, like wrapping a present.</p>
+          <div class="branch-head">No, a woman: ask <b>“Earrings?”</b></div>
+          <ul class="sub">
+            <li><span class="ans yes">earrings</span> look up: <b>Hat?</b>
+              <ul><li><span class="ans yes">hat</span> <b>Necklace?</b></li><li><span class="ans no">no hat</span> <b>Glasses?</b></li></ul></li>
+            <li><span class="ans no">no earrings</span> look at her hair: <b>Bow?</b>
+              <ul><li><span class="ans yes">bow</span> <b>Black hair?</b></li><li><span class="ans no">no bow</span> <b>Red hair?</b></li></ul></li>
+          </ul>
         </div>
       </div>
-      <p class="fine">Each of the 8 men has a different mix of hat / glasses / beard, and each of the 8 women has a
-        different mix of earrings / necklace / bow. So those three questions halve the group in <i>any</i> order.
-        The order above is just easy to remember.</p>
+      <p class="fine"><b>Two faces left?</b> Ask about anything that’s different between them (the tree shows one
+        option for each pair). By then a student can just look at the two faces.</p>
     </section>
 
     <section>
       <h2>The whole decision tree</h2>
-      <p class="muted">Follow the answers down; every path ends at exactly one person after 4 questions.</p>
-      <div class="tree-scroll"><div class="tree" id="tree"></div></div>
+      <p class="muted">Every question splits the faces still standing as evenly as possible, and the next question
+        depends on the answer. People higher up the tree are found in 4 questions, the rest in 5.</p>
+      <div class="tree-root"><span class="tnode root"><span class="tq">Is it a man?</span><span class="tcount">24 left</span></span></div>
+      <h3 class="tree-title"><span class="ans yes">yes</span> one of the 12 men</h3>
+      <div class="tree-scroll"><div class="tree" id="tree-men"></div></div>
+      <h3 class="tree-title"><span class="ans no">no</span> one of the 12 women</h3>
+      <div class="tree-scroll"><div class="tree" id="tree-women"></div></div>
     </section>
 
     <section>
-      <h2>Why it’s not obvious: the decoys</h2>
-      <p>To stop students spotting the pattern straight away, some of the “key” features also turn up where they don’t
-        help. They make tempting first questions that <i>almost</i> split the board in half, but not quite.</p>
-      <div class="decoys" id="decoys"></div>
-      <p class="muted small">Only “Is it a man?” (or “Is it a woman?”) splits all 16 into 8 and 8. With strategy hints
-        turned on, the game shows each question’s split, like <b>8|8</b> or <b>7|9</b>.</p>
+      <h2>Why it’s not obvious</h2>
+      <p>Lots of features look like good first questions but don’t quite split the board in half. Only “Is it a
+        man?” (or “Is it a woman?”) does. The same feature can also mean different things in different branches. A hat
+        is the 2nd question for men, the 3rd question for women with earrings, and just a decoy for women without
+        earrings.</p>
+      <div class="first-splits" id="first-splits"></div>
+      <p class="muted small">With strategy hints turned on, the game shows each question’s split, like <b>12|12</b>
+        or <b>10|14</b>.</p>
     </section>
 
     <section>
-      <h2>Everyone at a glance</h2>
-      <div class="table-scroll"><table class="traits" id="traits"></table></div>
-      <p class="muted small"><span class="key-dot"></span> = a strategy feature for that person’s group ·
-        <span class="decoy-dot"></span> = a decoy</p>
+      <h2>Every person’s path</h2>
+      <div class="table-scroll"><table class="traits" id="paths"></table></div>
     </section>
 
     <section class="lesson">
@@ -80,11 +94,14 @@
         <li><b>Play first, explain later.</b> Let students play a couple of rounds (or practice solo) and record how many
           questions they needed before they knew the answer.</li>
         <li><b>Find the best first question.</b> Ask: “Which question flips down the most faces <i>whatever</i> the
-          answer is?” Compare “Is it Grace?” (flips down 1 face or 15) with “Hat?” (7 or 9) and “Man?” (8 either way).</li>
+          answer is?” Compare “Is it Grace?” (flips down 1 face or 23) with “Hat?” (10 or 14) and “Man?” (12 either way).</li>
         <li><b>Play with hints.</b> Turn on <i>Strategy hints</i> in the lobby. The game shows how every question would
-          split the faces still standing and stars the best one.</li>
-        <li><b>Name the pattern.</b> 16 → 8 → 4 → 2 → 1. How many questions for 32 faces? 64? 1,000?
-          (5, 6, and 10, because 2¹⁰ = 1,024.)</li>
+          split the faces still standing and stars the one from the tree.</li>
+        <li><b>Notice the next question changes.</b> After “Hat? yes” the tree asks about glasses, but after “Hat? no”
+          it asks about a beard. Why does the best question depend on who’s left?</li>
+        <li><b>Name the pattern.</b> 24 → 12 → 6 → 3 → 2 → 1. Why can’t 4 questions always be enough for 24 people?
+          (4 yes/no answers make only 2 × 2 × 2 × 2 = 16 different answer patterns.) How many questions for 32 faces?
+          64? 1,000? (5, 6, and 10, because 2¹⁰ = 1,024.)</li>
         <li><b>Connect it.</b> Looking up a word in a dictionary, the “higher or lower” number game, and finding a
           page in a book all work the same way.</li>
       </ol>
