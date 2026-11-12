@@ -249,6 +249,63 @@ test('solo practice: computer hides someone, play starts at once, turn stays wit
   assert.strictEqual(s.players.guest.secret, 'arjun');
 });
 
+test('strategy hints are only ever sent to the host', () => {
+  let s = game.create({ hostName: 'T', hints: true });
+  s = game.apply(s, 'guest', { type: 'join', name: 'S' }).state;
+  assert.strictEqual(game.viewFor(s, 'host').settings.hints, true);
+  assert.strictEqual(game.viewFor(s, 'guest').settings.hints, false);
+  assert.ok(game.apply(s, 'guest', { type: 'settings', hints: true }).error, 'guest cannot turn hints on');
+});
+
+function confirmGame() {
+  let s = game.create({ hostName: 'T', confirmAnswers: true });
+  s = game.apply(s, 'guest', { type: 'join', name: 'S' }).state;
+  s = game.apply(s, 'host', { type: 'pick', id: 'hiro' }).state;   // glasses, no hat
+  s = game.apply(s, 'guest', { type: 'pick', id: 'grace' }).state;
+  return s;
+}
+
+test('confirm answers: a list question waits until the other player sends the answer', () => {
+  let s = confirmGame();
+  s = game.apply(s, 'guest', { type: 'ask', qid: 'glasses' }).state;
+  assert.deepStrictEqual(s.pending, { seat: 'guest', text: 'Are they wearing glasses?', qid: 'glasses' });
+  assert.strictEqual(s.log.length, 0);
+  assert.strictEqual(s.turn, 'guest');
+  assert.ok(!('yes' in game.viewFor(s, 'guest').pending), 'the asker cannot see the answer early');
+  assert.ok(game.apply(s, 'guest', { type: 'answer' }).error, 'asker cannot answer');
+  s = game.apply(s, 'host', { type: 'answer' }).state;
+  assert.strictEqual(s.pending, null);
+  assert.strictEqual(s.log[0].qid, 'glasses');
+  assert.strictEqual(s.log[0].yes, true);
+  assert.strictEqual(s.turn, 'host');
+  assert.strictEqual(s.players.guest.asked, 1);
+});
+
+test('confirm answers: the true answer is sent even if the other player taps the wrong one', () => {
+  let s = confirmGame();
+  s = game.apply(s, 'guest', { type: 'ask', qid: 'hat' }).state;
+  s = game.apply(s, 'host', { type: 'answer', yes: true }).state;   // Hiro has no hat
+  assert.strictEqual(s.log[0].yes, false);
+});
+
+test('confirm answers: turning the setting off answers a waiting list question', () => {
+  let s = confirmGame();
+  s = game.apply(s, 'guest', { type: 'ask', qid: 'man' }).state;
+  s = game.apply(s, 'host', { type: 'settings', confirmAnswers: false }).state;
+  assert.strictEqual(s.pending, null);
+  assert.strictEqual(s.log[0].yes, true);
+  assert.strictEqual(s.turn, 'host');
+  s = game.apply(s, 'host', { type: 'ask', qid: 'man' }).state;      // now answered at once
+  assert.strictEqual(s.log.length, 2);
+});
+
+test('confirm answers does not affect solo practice', () => {
+  let s = game.create({ solo: true, confirmAnswers: true });
+  s = game.apply(s, 'host', { type: 'ask', qid: 'man' }).state;
+  assert.strictEqual(s.pending, null);
+  assert.strictEqual(s.log.length, 1);
+});
+
 test('apply never mutates the previous state and rejects junk', () => {
   const s = playToPlay();
   const before = JSON.stringify(s);

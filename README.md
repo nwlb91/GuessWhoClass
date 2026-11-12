@@ -52,16 +52,19 @@ Any other static host works too (Netlify, Cloudflare Pages, a school web server)
    projector.
 2. The student scans the QR code with a phone or tablet, or opens the site and types the code, then enters their name.
 3. Both players secretly pick a mystery person. The student asks first.
-4. On your turn, tap a question from the list (answered automatically, so nobody can make a mistake) or type your
-   own (the other player taps Yes/No). Tap faces to flip them down, or press **Flip down the N who don’t match**.
+4. On your turn, tap a question from the list (the game knows the true answer, so nobody can make a mistake) or type
+   your own (the other player taps Yes/No). Tap faces to flip them down, or press **Flip down the N who don’t match**.
 5. Make a final guess when you know. A wrong guess loses the round (the classic rule).
 6. At the end, both players see a “how you narrowed it down” chart, such as 24 → 12 → 6 → 3 → 1.
 
 More tips:
 
 - **Strategy hints** (a toggle in the lobby or in the top bar) show how each question would split the faces still
-  standing, for example `12|12` or `10|14`, and star the tree's next question. Turn it on after students have
-  tried on their own.
+  standing, for example `12|12` or `10|14`, and star the tree's next question. **Only the host sees hints.** The
+  student's device is never sent them, so you can project your screen and think aloud.
+- **Players confirm answers** (lobby or ☰ menu): when someone asks a question from the list, the other player sees
+  the true answer for their mystery person and taps **Send**. Only the true answer can be sent, but both players
+  stay involved. When it's off, list questions are answered instantly.
 - **Next student:** ☰ menu → *Invite a different student* (same code, fresh game).
 - **Several games at once:** open the site in more tabs. Each tab hosts its own game with its own code.
   Students can also host games for each other.

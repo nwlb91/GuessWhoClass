@@ -33,7 +33,9 @@
       id: Math.random().toString(36).slice(2, 10),
       phase: opts.solo ? 'pick' : 'lobby',   // lobby -> pick -> play -> over -> (rematch) pick
       solo: !!opts.solo,
-      settings: { hints: !!opts.hints },
+      // hints: the host sees how each question splits the board (never sent to the guest)
+      // confirmAnswers: list questions wait for the answerer to tap "Send" on the true answer
+      settings: { hints: !!opts.hints, confirmAnswers: !!opts.confirmAnswers },
       round: 1,
       firstTurn: opts.solo ? 'host' : 'guest', // the student goes first in round 1
       turn: null,
@@ -41,7 +43,7 @@
         host: blankPlayer(cleanName(opts.hostName, opts.solo ? 'You' : 'Teacher')),
         guest: blankPlayer(opts.solo ? 'Computer' : null)
       },
-      pending: null,      // custom (typed) question waiting for a yes/no answer
+      pending: null,      // question waiting for the other player: {seat, text, qid?}
       log: [],
       winner: null,
       endReason: null,
@@ -94,6 +96,11 @@
       case 'settings': {
         if (seat !== 'host') return fail(prev, 'Only the host can change settings.');
         if (typeof action.hints === 'boolean') s.settings.hints = action.hints;
+        if (typeof action.confirmAnswers === 'boolean') s.settings.confirmAnswers = action.confirmAnswers;
+        // Turning confirmation off answers any list question that was waiting for it.
+        if (!s.settings.confirmAnswers && s.pending && s.pending.qid) {
+          resolvePending(s, data.Q_BY_ID[s.pending.qid].test(data.BY_ID[s.players[other(s.pending.seat)].secret]));
+        }
         break;
       }
 
@@ -113,9 +120,13 @@
         if (action.qid) {
           var q = data.Q_BY_ID[action.qid];
           if (!q) return fail(prev, 'Unknown question.');
-          var yes = q.test(data.BY_ID[opp.secret]);
+          if (s.settings.confirmAnswers && !s.solo) {
+            // The answer is worked out when the other player confirms it, so it never sits in the state early.
+            s.pending = { seat: seat, text: q.text, qid: q.id };
+            break;
+          }
           me.asked++;
-          s.log.push({ seat: seat, kind: 'q', qid: q.id, text: q.text, yes: yes });
+          s.log.push({ seat: seat, kind: 'q', qid: q.id, text: q.text, yes: q.test(data.BY_ID[opp.secret]) });
           s.turn = s.solo ? seat : oppSeat;
         } else {
           if (s.solo) return fail(prev, 'The computer can only answer questions from the list.');
@@ -129,11 +140,13 @@
       case 'answer': {
         if (s.phase !== 'play' || !s.pending) return fail(prev, 'There is no question to answer.');
         if (s.pending.seat === seat) return fail(prev, 'Your opponent has to answer.');
-        if (typeof action.yes !== 'boolean') return fail(prev, 'Answer yes or no.');
-        s.players[s.pending.seat].asked++;
-        s.log.push({ seat: s.pending.seat, kind: 'q', qid: null, text: s.pending.text, yes: action.yes });
-        s.turn = seat;
-        s.pending = null;
+        if (s.pending.qid) {
+          // List question: the true answer for this player's mystery person is sent, whatever was tapped.
+          resolvePending(s, data.Q_BY_ID[s.pending.qid].test(data.BY_ID[me.secret]));
+        } else {
+          if (typeof action.yes !== 'boolean') return fail(prev, 'Answer yes or no.');
+          resolvePending(s, action.yes);
+        }
         break;
       }
 
@@ -194,6 +207,15 @@
     return { state: s };
   }
 
+  /** Record the answer to the waiting question and pass the turn to whoever answered it. */
+  function resolvePending(s, yes) {
+    var p = s.pending;
+    s.players[p.seat].asked++;
+    s.log.push({ seat: p.seat, kind: 'q', qid: p.qid || null, text: p.text, yes: yes });
+    s.turn = other(p.seat);
+    s.pending = null;
+  }
+
   function startPlay(s) {
     s.phase = 'play';
     s.turn = s.firstTurn;
@@ -222,7 +244,10 @@
       seq: s.seq,
       phase: s.phase,
       solo: s.solo,
-      settings: clone(s.settings),
+      settings: {
+        hints: seat === 'host' && !!s.settings.hints,   // only the host ever sees hints
+        confirmAnswers: !!s.settings.confirmAnswers
+      },
       round: s.round,
       turn: s.turn,
       firstTurn: s.firstTurn,

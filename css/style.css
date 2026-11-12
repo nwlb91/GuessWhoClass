@@ -243,6 +243,12 @@ input:focus-visible + .toggle-ui { outline: 3px solid var(--accent); outline-off
 .pick-box .row { margin: 8px 0; }
 
 .answer-box { box-shadow: 0 0 0 3px var(--accent), var(--shadow); }
+.true-answer { font-family: var(--font-display); font-size: 2.4rem; font-weight: 700; text-align: center; line-height: 1; margin: 4px 0 14px; }
+.true-answer.yes { color: var(--yes); }
+.true-answer.no { color: var(--no); }
+.btn.wide { width: 100%; }
+.settings { display: flex; flex-direction: column; gap: 14px; }
+.modal .settings { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
 .question-quote { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; margin: 6px 0 10px; word-wrap: break-word; }
 .answer-help { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; color: var(--muted); font-weight: 700; }
 .waiting-box { display: flex; gap: 12px; align-items: center; }

@@ -46,6 +46,7 @@
 
   // ------------------------------------------------------------------ ui state
   const ui = {
+    scrollToAnswer: false,
     overHidden: null,      // round whose results overlay the player closed
     draftQuestion: '',
     screen: 'home',        // home | join | host | guest | solo | ended
@@ -289,13 +290,13 @@
       actions: [{ label: 'Cancel', cls: 'ghost' }, {
         label: 'New student', cls: 'primary', onClick() {
           session.link.send({ t: 'reject', reason: `${session.state.players.host.name} started a new game. Thanks for playing!` });
-          const hints = session.state.settings.hints;
+          const { hints, confirmAnswers } = session.state.settings;
           const hostName = session.state.players.host.name;
           setTimeout(() => {
             if (session.link && session.link.conn) { try { session.link.conn.close(); } catch (e) { /* ignore */ } }
           }, 400);
           session.guestClientId = null;
-          setHostState(game.create({ hostName, hints }));
+          setHostState(game.create({ hostName, hints, confirmAnswers }));
         }
       }]
     });
@@ -346,6 +347,14 @@
     if (v.phase !== 'pick') ui.selected = null;
     notify(prev, v);
     render();
+    if (ui.scrollToAnswer) {
+      ui.scrollToAnswer = false;
+      const box = $('#answer-box');
+      if (box) {
+        const r = box.getBoundingClientRect();
+        if (r.top < 60 || r.bottom > window.innerHeight) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
   }
 
   function notify(prev, v) {
@@ -360,7 +369,10 @@
       if (e.seat === v.mySeat) msg = `${opp} says ${yesNo(e.yes).toUpperCase()}`;
       else if (!v.solo) msg = `Your turn! (${opp} asked “${e.qid ? data.Q_BY_ID[e.qid].label : 'their question'}” → ${yesNo(e.yes)})`;
     });
-    if (!msg && v.pending && !prev.pending && v.pending.seat !== v.mySeat) msg = `${opp} asked you a question — answer it on the right`;
+    if (!msg && v.pending && !prev.pending && v.pending.seat !== v.mySeat) {
+      msg = `${opp} asked you a question!`;
+      ui.scrollToAnswer = true;
+    }
     if (!msg && prev.phase === 'pick' && v.phase === 'play') msg = v.turn === v.mySeat ? 'Game on — you go first!' : `Game on — ${opp} goes first`;
     if (msg) toast(msg);
   }
@@ -491,6 +503,7 @@
     if (existing && existing.dataset.code === s.code) {
       $('#lobby-status', app).innerHTML = status;
       $('#hints-toggle', app).checked = s.state.settings.hints;
+      $('#confirm-toggle', app).checked = s.state.settings.confirmAnswers;
       return;
     }
     app.innerHTML = `
@@ -511,11 +524,7 @@
             </div>
           </div>
           <div class="lobby-status" id="lobby-status" aria-live="polite">${status}</div>
-          <label class="toggle">
-            <input type="checkbox" id="hints-toggle" data-action="toggle-hints" ${s.state.settings.hints ? 'checked' : ''}>
-            <span class="toggle-ui" aria-hidden="true"></span>
-            <span><b>Strategy hints</b><br><small>Show how each question would split the faces that are left, and star the best one.</small></span>
-          </label>
+          ${settingsToggles(s.state.settings, true)}
           <div class="lobby-actions">
             <button class="link" data-action="howto">How to play</button>
             <button class="link" data-action="leave">Cancel</button>
@@ -556,7 +565,25 @@
     renderOver();
   }
 
-  function hintsOn(v) { return v.solo ? ui.soloHints : !!v.settings.hints; }
+  // Hints are for the host (and solo practice) only; the guest's view never has them turned on.
+  function hintsOn(v) { return v.solo ? ui.soloHints : v.mySeat === 'host' && !!v.settings.hints; }
+
+  function settingsToggles(settings, withIds) {
+    return `<div class="settings">
+      <label class="toggle">
+        <input type="checkbox" ${withIds ? 'id="hints-toggle"' : ''} data-action="toggle-hints" ${settings.hints ? 'checked' : ''}>
+        <span class="toggle-ui" aria-hidden="true"></span>
+        <span><b>Strategy hints (only you see them)</b><br><small>On your turn, see how each question would split the faces still
+          standing (like 6|6) and which question is best. Your student never sees hints.</small></span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" ${withIds ? 'id="confirm-toggle"' : ''} data-action="toggle-confirm" ${settings.confirmAnswers ? 'checked' : ''}>
+        <span class="toggle-ui" aria-hidden="true"></span>
+        <span><b>Players confirm answers</b><br><small>When a question from the list is asked, the other player sees the true
+          answer for their mystery person and taps to send it. Nobody can give a wrong answer.</small></span>
+      </label>
+    </div>`;
+  }
 
   function renderTopbar() {
     const v = ui.view;
@@ -718,9 +745,20 @@
     const opp = esc(v.opp.name);
     const out = [];
     if (v.phase === 'play') {
-      if (v.pending && v.pending.seat !== v.mySeat) {
+      if (v.pending && v.pending.seat !== v.mySeat && v.pending.qid) {
         const c = data.BY_ID[v.me.secret];
-        out.push(`<div class="box answer-box">
+        const yes = data.Q_BY_ID[v.pending.qid].test(c);
+        out.push(`<div class="box answer-box" id="answer-box">
+          <div class="eyebrow">${opp} asks</div>
+          <p class="question-quote">“${esc(v.pending.text)}”</p>
+          <div class="answer-help"><div class="mini-card">${avatar.svg(c, { title: false })}</div>
+            <span>Check your mystery person, <b>${esc(c.name)}</b>. The answer is:</span></div>
+          <div class="true-answer ${yes ? 'yes' : 'no'}">${yes ? 'YES' : 'NO'}</div>
+          <button class="btn ${yes ? 'yes' : 'no'} big wide" data-action="answer">Send “${yesNo(yes)}” to ${opp}</button>
+        </div>`);
+      } else if (v.pending && v.pending.seat !== v.mySeat) {
+        const c = data.BY_ID[v.me.secret];
+        out.push(`<div class="box answer-box" id="answer-box">
           <div class="eyebrow">${opp} asks</div>
           <p class="question-quote">“${esc(v.pending.text)}”</p>
           <div class="answer-help"><div class="mini-card">${avatar.svg(c, { title: false })}</div>
@@ -971,6 +1009,9 @@
       if (session.role === 'solo') { ui.soloHints = el.checked; render(); return; }
       if (session.role === 'host') dispatch({ type: 'settings', hints: el.checked });
     },
+    'toggle-confirm'(el) {
+      if (session && session.role === 'host') dispatch({ type: 'settings', confirmAnswers: el.checked });
+    },
     'show-invite'() {
       const url = net.joinUrl(session.code);
       modal({
@@ -984,7 +1025,8 @@
       if (session.role === 'host') items.push({ label: 'Invite a different student', cls: 'ghost', onClick: inviteNewStudent });
       items.push({ label: session.role === 'solo' ? 'Quit practice' : 'Leave game', cls: 'danger', onClick: confirmLeave });
       items.push({ label: 'Close', cls: 'primary' });
-      modal({ title: 'Menu', html: '<p class="muted">Teacher guide: <a href="guide.html" target="_blank" rel="noopener">open the strategy guide</a></p>', actions: items });
+      const settings = session.role === 'host' ? settingsToggles(session.state.settings, false) : '';
+      modal({ title: 'Menu', html: settings + '<p class="muted">Teacher guide: <a href="guide.html" target="_blank" rel="noopener">open the strategy guide</a></p>', actions: items });
     },
     'lock-in'() { if (ui.selected) dispatch({ type: 'pick', id: ui.selected }); },
     'random-pick'() {
@@ -993,7 +1035,9 @@
       updateBoard(); renderSide();
     },
     ask(el) { ui.draftQuestion = ''; dispatch({ type: 'ask', qid: el.dataset.q }); },
-    answer(el) { dispatch({ type: 'answer', yes: el.dataset.yes === '1' }); },
+    answer(el) {
+      dispatch(el.dataset.yes == null ? { type: 'answer' } : { type: 'answer', yes: el.dataset.yes === '1' });
+    },
     'auto-flip'() {
       const ids = toFlipIds(ui.view);
       if (ids.length) dispatch({ type: 'flip', ids, down: true });
