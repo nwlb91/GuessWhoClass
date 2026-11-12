@@ -35,7 +35,8 @@
       solo: !!opts.solo,
       // hints: the host sees how each question splits the board (never sent to the guest)
       // confirmAnswers: list questions wait for the answerer to tap "Send" on the true answer
-      settings: { hints: !!opts.hints, confirmAnswers: !!opts.confirmAnswers },
+      // autoFlip: each answer to a list question flips down the faces it rules out
+      settings: { hints: !!opts.hints, confirmAnswers: !!opts.confirmAnswers, autoFlip: !!opts.autoFlip },
       round: 1,
       firstTurn: opts.solo ? 'host' : 'guest', // the student goes first in round 1
       turn: null,
@@ -97,6 +98,7 @@
         if (seat !== 'host') return fail(prev, 'Only the host can change settings.');
         if (typeof action.hints === 'boolean') s.settings.hints = action.hints;
         if (typeof action.confirmAnswers === 'boolean') s.settings.confirmAnswers = action.confirmAnswers;
+        if (typeof action.autoFlip === 'boolean') s.settings.autoFlip = action.autoFlip;
         // Turning confirmation off answers any list question that was waiting for it.
         if (!s.settings.confirmAnswers && s.pending && s.pending.qid) {
           resolvePending(s, data.Q_BY_ID[s.pending.qid].test(data.BY_ID[s.players[other(s.pending.seat)].secret]));
@@ -246,7 +248,8 @@
       solo: s.solo,
       settings: {
         hints: seat === 'host' && !!s.settings.hints,   // only the host ever sees hints
-        confirmAnswers: !!s.settings.confirmAnswers
+        confirmAnswers: !!s.settings.confirmAnswers,
+        autoFlip: !!s.settings.autoFlip
       },
       round: s.round,
       turn: s.turn,

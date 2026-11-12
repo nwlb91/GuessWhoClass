@@ -46,6 +46,7 @@
 
   // ------------------------------------------------------------------ ui state
   const ui = {
+    autoFlipTimer: null,
     scrollToAnswer: false,
     overHidden: null,      // round whose results overlay the player closed
     draftQuestion: '',
@@ -290,13 +291,13 @@
       actions: [{ label: 'Cancel', cls: 'ghost' }, {
         label: 'New student', cls: 'primary', onClick() {
           session.link.send({ t: 'reject', reason: `${session.state.players.host.name} started a new game. Thanks for playing!` });
-          const { hints, confirmAnswers } = session.state.settings;
+          const { hints, confirmAnswers, autoFlip } = session.state.settings;
           const hostName = session.state.players.host.name;
           setTimeout(() => {
             if (session.link && session.link.conn) { try { session.link.conn.close(); } catch (e) { /* ignore */ } }
           }, 400);
           session.guestClientId = null;
-          setHostState(game.create({ hostName, hints, confirmAnswers }));
+          setHostState(game.create({ hostName, hints, confirmAnswers, autoFlip }));
         }
       }]
     });
@@ -347,6 +348,16 @@
     if (v.phase !== 'pick') ui.selected = null;
     notify(prev, v);
     render();
+    if (shouldAutoFlip(prev, v)) {
+      clearTimeout(ui.autoFlipTimer);
+      // A short pause so the player sees the answer, then the cards turn over.
+      ui.autoFlipTimer = setTimeout(() => {
+        const cur = ui.view;
+        if (!cur || cur.phase !== 'play' || !cur.settings.autoFlip) return;
+        const ids = toFlipIds(cur);
+        if (ids.length) dispatch({ type: 'flip', ids, down: true });
+      }, 450);
+    }
     if (ui.scrollToAnswer) {
       ui.scrollToAnswer = false;
       const box = $('#answer-box');
@@ -355,6 +366,13 @@
         if (r.top < 60 || r.bottom > window.innerHeight) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
+  }
+
+  function shouldAutoFlip(prev, v) {
+    if (v.phase !== 'play' || !v.settings.autoFlip) return false;
+    if (!prev || prev.id !== v.id || prev.round !== v.round) return false;
+    if (!prev.settings.autoFlip) return true;                 // just switched on: tidy the board now
+    return v.log.slice(prev.log.length).some((e) => e.kind === 'q' && e.qid && e.seat === v.mySeat);
   }
 
   function notify(prev, v) {
@@ -504,6 +522,7 @@
       $('#lobby-status', app).innerHTML = status;
       $('#hints-toggle', app).checked = s.state.settings.hints;
       $('#confirm-toggle', app).checked = s.state.settings.confirmAnswers;
+      $('#autoflip-toggle', app).checked = s.state.settings.autoFlip;
       return;
     }
     app.innerHTML = `
@@ -568,7 +587,14 @@
   // Hints are for the host (and solo practice) only; the guest's view never has them turned on.
   function hintsOn(v) { return v.solo ? ui.soloHints : v.mySeat === 'host' && !!v.settings.hints; }
 
-  function settingsToggles(settings, withIds) {
+  function settingsToggles(settings, withIds, soloOnly) {
+    const autoFlip = `<label class="toggle">
+        <input type="checkbox" ${withIds ? 'id="autoflip-toggle"' : ''} data-action="toggle-autoflip" ${settings.autoFlip ? 'checked' : ''}>
+        <span class="toggle-ui" aria-hidden="true"></span>
+        <span><b>Auto-flip faces that don’t match</b><br><small>After each answer to a question from the list, the faces it
+          rules out flip down by themselves${soloOnly ? '' : ' (for both players)'}. Typed questions still need flipping by hand.</small></span>
+      </label>`;
+    if (soloOnly) return `<div class="settings">${autoFlip}</div>`;
     return `<div class="settings">
       <label class="toggle">
         <input type="checkbox" ${withIds ? 'id="hints-toggle"' : ''} data-action="toggle-hints" ${settings.hints ? 'checked' : ''}>
@@ -582,6 +608,7 @@
         <span><b>Players confirm answers</b><br><small>When a question from the list is asked, the other player sees the true
           answer for their mystery person and taps to send it. Nobody can give a wrong answer.</small></span>
       </label>
+      ${autoFlip}
     </div>`;
   }
 
@@ -1009,6 +1036,9 @@
       if (session.role === 'solo') { ui.soloHints = el.checked; render(); return; }
       if (session.role === 'host') dispatch({ type: 'settings', hints: el.checked });
     },
+    'toggle-autoflip'(el) {
+      if (session && session.role !== 'guest') dispatch({ type: 'settings', autoFlip: el.checked });
+    },
     'toggle-confirm'(el) {
       if (session && session.role === 'host') dispatch({ type: 'settings', confirmAnswers: el.checked });
     },
@@ -1025,7 +1055,7 @@
       if (session.role === 'host') items.push({ label: 'Invite a different student', cls: 'ghost', onClick: inviteNewStudent });
       items.push({ label: session.role === 'solo' ? 'Quit practice' : 'Leave game', cls: 'danger', onClick: confirmLeave });
       items.push({ label: 'Close', cls: 'primary' });
-      const settings = session.role === 'host' ? settingsToggles(session.state.settings, false) : '';
+      const settings = session.role === 'guest' ? '' : settingsToggles(session.state.settings, false, session.role === 'solo');
       modal({ title: 'Menu', html: settings + '<p class="muted">Teacher guide: <a href="guide.html" target="_blank" rel="noopener">open the strategy guide</a></p>', actions: items });
     },
     'lock-in'() { if (ui.selected) dispatch({ type: 'pick', id: ui.selected }); },

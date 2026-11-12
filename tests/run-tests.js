@@ -299,6 +299,19 @@ test('confirm answers: turning the setting off answers a waiting list question',
   assert.strictEqual(s.log.length, 2);
 });
 
+test('auto-flip is a host setting that both players see', () => {
+  let s = game.create({ hostName: 'T' });
+  s = game.apply(s, 'guest', { type: 'join', name: 'S' }).state;
+  assert.strictEqual(game.viewFor(s, 'guest').settings.autoFlip, false);
+  assert.ok(game.apply(s, 'guest', { type: 'settings', autoFlip: true }).error, 'guest cannot change it');
+  s = game.apply(s, 'host', { type: 'settings', autoFlip: true }).state;
+  assert.strictEqual(game.viewFor(s, 'host').settings.autoFlip, true);
+  assert.strictEqual(game.viewFor(s, 'guest').settings.autoFlip, true);
+  let solo = game.create({ solo: true });
+  solo = game.apply(solo, 'host', { type: 'settings', autoFlip: true }).state;
+  assert.strictEqual(game.viewFor(solo, 'host').settings.autoFlip, true);
+});
+
 test('confirm answers does not affect solo practice', () => {
   let s = game.create({ solo: true, confirmAnswers: true });
   s = game.apply(s, 'host', { type: 'ask', qid: 'man' }).state;

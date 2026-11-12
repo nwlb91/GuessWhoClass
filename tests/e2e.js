@@ -190,10 +190,15 @@ async function shot(page, name) {
     await host.waitForSelector('.ask-box .chip.best', { timeout: 10000 });
     assert((await host.getAttribute('.chip.best', 'data-q')) === 'beard', 'after "hat? no" the hint changes to "Beard?"');
 
-    console.log('Confirm answers');
+    console.log('Confirm answers + auto-flip');
+    // The student has answers "man? no" and "earrings? no" but hasn't flipped anything this round.
+    assert(await remaining(guest) === 24, 'student has not flipped any faces yet');
     await host.click('[data-action=menu]');
     await host.check('.modal input[data-action=toggle-confirm]', { force: true });
+    await host.check('.modal input[data-action=toggle-autoflip]', { force: true });
     await host.click('.modal .btn.primary');                  // Close
+    await guest.waitForFunction(() => /^6$/.test(document.querySelector('.left-count b').textContent.trim()), null, { timeout: 10000 });
+    assert(true, 'turning auto-flip on tidies the student’s board straight away (24 → 6)');
     await ask(host, 'beard');                                 // Kofi has no beard
     await guest.waitForSelector('#answer-box .true-answer', { timeout: 10000 });
     assert((await guest.textContent('#answer-box .true-answer')).trim() === 'NO', 'student sees the true answer (NO) to confirm');
@@ -203,6 +208,9 @@ async function shot(page, name) {
     await guest.click('#answer-box [data-action=answer]');
     await host.waitForFunction(() => /beard/i.test(document.querySelector('.last-box .qa span').textContent), null, { timeout: 10000 });
     assert((await host.textContent('.last-box .qa b')).trim() === 'No', 'host receives the confirmed answer');
+    await host.waitForFunction(() => document.querySelector('.left-count b').textContent.trim() === '3', null, { timeout: 10000 });
+    const hostLeft = await host.$$eval('#board .card:not(.down)', (els) => els.map((e) => e.dataset.id).sort());
+    assert(hostLeft.join(',') === 'hiro,kofi,tariq', 'host’s board auto-flips to the 3 who match (Hiro, Kofi, Tariq)');
     await guest.waitForSelector('.ask-box', { timeout: 10000 });
     await ask(guest, 'hat');                                  // Mei has no hat
     await host.waitForSelector('#answer-box .true-answer', { timeout: 10000 });
@@ -210,6 +218,8 @@ async function shot(page, name) {
     await host.click('#answer-box [data-action=answer]');
     await guest.waitForFunction(() => /hat/i.test(document.querySelector('.last-box .qa span').textContent), null, { timeout: 10000 });
     assert((await guest.textContent('.last-box .qa b')).trim() === 'No', 'student receives the host’s confirmed answer');
+    await guest.waitForFunction(() => document.querySelector('.left-count b').textContent.trim() === '5', null, { timeout: 10000 });
+    assert(true, 'student’s board auto-flips after the answer (6 → 5)');
 
     console.log('Host ends the game');
     await host.click('[data-action=menu]');

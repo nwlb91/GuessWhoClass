@@ -65,6 +65,9 @@ More tips:
 - **Players confirm answers** (lobby or ☰ menu): when someone asks a question from the list, the other player sees
   the true answer for their mystery person and taps **Send**. Only the true answer can be sent, but both players
   stay involved. When it's off, list questions are answered instantly.
+- **Auto-flip faces that don't match** (lobby or ☰ menu, and in solo practice): after each answer to a list
+  question, the faces it rules out flip down by themselves for both players. When it's off, players flip faces
+  themselves or press **Flip down the N who don't match**.
 - **Next student:** ☰ menu → *Invite a different student* (same code, fresh game).
 - **Several games at once:** open the site in more tabs. Each tab hosts its own game with its own code.
   Students can also host games for each other.
