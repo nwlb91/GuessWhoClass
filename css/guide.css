@@ -1,0 +1,74 @@
+.guide { background-attachment: scroll; }
+.guide-top {
+  position: sticky; top: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 10px 16px; background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+}
+.guide-top .brand { text-decoration: none; color: var(--ink); }
+.guide-top-actions { display: flex; gap: 8px; }
+.guide-top-actions .btn { flex-direction: row; }
+.guide-main { max-width: 1100px; margin: 0 auto; padding: 28px 16px 60px; display: flex; flex-direction: column; gap: 36px; }
+.guide-main section > h2 { font-size: 1.5rem; }
+.lead { font-size: 1.12rem; max-width: 62ch; }
+
+/* strategy card */
+.strategy-card { background: var(--card); border-radius: 24px; padding: 24px; box-shadow: var(--shadow); border: 3px solid var(--primary); }
+.step-1 { display: flex; gap: 14px; align-items: center; margin-bottom: 18px; }
+.step-1 .q { font-family: var(--font-display); font-size: 1.6rem; display: block; }
+.num { flex: none; width: 44px; height: 44px; border-radius: 50%; background: var(--primary); color: #fff; display: grid; place-items: center; font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; }
+.branches { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.branch { border-radius: 16px; padding: 16px 18px; }
+.branch.man { background: #E8F1FF; }
+.branch.woman { background: #FFEAF4; }
+.branch-head { font-weight: 800; margin-bottom: 6px; }
+.branch ol { margin: 0 0 8px; padding-left: 1.6em; font-family: var(--font-display); font-size: 1.35rem; }
+.mnemonic { margin: 0; font-style: italic; color: var(--muted); font-weight: 700; }
+.fine { margin: 16px 0 0; color: var(--muted); font-size: .92rem; }
+
+/* tree */
+.tree-scroll { overflow-x: auto; padding-bottom: 8px; }
+.tree { display: grid; grid-template-columns: repeat(16, minmax(54px, 1fr)); column-gap: 4px; min-width: 900px; align-items: start; }
+.tnode { justify-self: center; text-align: center; background: var(--card); border: 2px solid var(--primary); border-radius: 12px; padding: 4px 10px; box-shadow: var(--shadow); line-height: 1.15; white-space: nowrap; }
+.tq { display: block; font-family: var(--font-display); font-weight: 600; font-size: .95rem; }
+.tcount { display: block; font-size: .7rem; color: var(--muted); font-weight: 700; }
+.tbranch { position: relative; height: 26px; }
+.tbranch { margin-left: 25%; margin-right: 25%; border: 2px solid #B8A9F2; border-bottom: 0; border-radius: 10px 10px 0 0; margin-top: 4px; }
+.tbranch .ty, .tbranch .tn { position: absolute; top: 2px; font-size: .7rem; font-weight: 800; padding: 0 3px; }
+.tbranch .ty { left: 4px; color: var(--yes); }
+.tbranch .tn { right: 4px; color: var(--no); }
+.tleaf { text-align: center; font-size: .78rem; margin-top: 2px; }
+.tface { border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); background: #fff; }
+.tface svg { width: 100%; height: auto; display: block; }
+.tface.tiny { width: 36px; box-shadow: none; }
+
+/* decoys */
+.decoys { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin: 12px 0; }
+.decoy { background: var(--card); border-radius: 16px; padding: 12px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 8px; }
+.decoy-faces { display: flex; gap: 6px; }
+.decoy-faces figure { margin: 0; width: 60px; text-align: center; font-size: .72rem; font-weight: 700; }
+
+/* trait table */
+.table-scroll { overflow-x: auto; }
+.traits { border-collapse: collapse; width: 100%; min-width: 560px; background: var(--card); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+.traits th, .traits td { padding: 4px 8px; text-align: center; border-bottom: 1px solid var(--line); }
+.traits th { background: var(--bg-2); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+.traits td:nth-child(2), .traits td:nth-child(3) { text-align: left; }
+.traits tbody tr:nth-child(8) td { border-bottom: 3px solid var(--primary-soft); }
+.key-dot, .decoy-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px; }
+.key-dot { background: var(--primary); }
+.decoy-dot { background: #fff; border: 3px solid var(--accent); }
+
+.lesson ol, .howto-host ol { padding-left: 1.3em; }
+.lesson li, .howto-host li { margin-bottom: 8px; }
+
+@media (max-width: 700px) {
+  .branches { grid-template-columns: 1fr; }
+}
+@media print {
+  @page { size: landscape; margin: 12mm; }
+  .guide-top { display: none; }
+  body { background: #fff; }
+  .guide-main { padding: 0; gap: 20px; }
+  .strategy-card, .decoy, .traits, .tnode { box-shadow: none; }
+  .tree { min-width: 0; }
+  section { break-inside: avoid; }
+}

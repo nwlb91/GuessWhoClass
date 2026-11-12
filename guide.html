@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teacher Guide — Who’s Hiding?</title>
+  <meta name="description" content="The 4-question halving strategy behind Who’s Hiding?, with the full decision tree and lesson ideas.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236C4CF1'/%3E%3Ctext x='50' y='72' font-size='64' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'%3E%3F%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/guide.css">
+</head>
+<body class="guide">
+  <header class="guide-top">
+    <a class="brand" href="./">Who’s <span>Hiding?</span></a>
+    <div class="guide-top-actions">
+      <button class="btn secondary small" onclick="window.print()">Print</button>
+      <a class="btn primary small" href="./">Play</a>
+    </div>
+  </header>
+
+  <main class="guide-main">
+    <section class="intro">
+      <p class="eyebrow">Teacher guide · strategy spoilers</p>
+      <h1>Find anyone in 4 questions</h1>
+      <p class="lead">There are <b>16</b> faces. A yes/no question that splits the faces still standing exactly in half
+        means every answer leaves half as many: <b>16 → 8 → 4 → 2 → 1</b>. Four halvings, because 2 × 2 × 2 × 2 = 16.
+        That’s <b>binary search</b>. The faces were designed so the halving questions are easy to remember.</p>
+    </section>
+
+    <section class="strategy-card" aria-label="The strategy">
+      <div class="step-1">
+        <span class="num">1</span>
+        <div><b class="q">“Is it a man?”</b><span class="muted">8 men, 8 women</span></div>
+      </div>
+      <div class="branches">
+        <div class="branch man">
+          <div class="branch-head">If it’s a <b>man</b>, ask in order:</div>
+          <ol start="2"><li><b>Hat?</b></li><li><b>Glasses?</b></li><li><b>Beard?</b></li></ol>
+          <p class="mnemonic">Read his face from the top down: hat, glasses, beard.</p>
+        </div>
+        <div class="branch woman">
+          <div class="branch-head">If it’s a <b>woman</b>, ask in order:</div>
+          <ol start="2"><li><b>Earrings?</b></li><li><b>Necklace?</b></li><li><b>Bow in her hair?</b></li></ol>
+          <p class="mnemonic">Earrings and a necklace, then tie it up with a bow, like wrapping a present.</p>
+        </div>
+      </div>
+      <p class="fine">Each of the 8 men has a different mix of hat / glasses / beard, and each of the 8 women has a
+        different mix of earrings / necklace / bow. So those three questions halve the group in <i>any</i> order.
+        The order above is just easy to remember.</p>
+    </section>
+
+    <section>
+      <h2>The whole decision tree</h2>
+      <p class="muted">Follow the answers down; every path ends at exactly one person after 4 questions.</p>
+      <div class="tree-scroll"><div class="tree" id="tree"></div></div>
+    </section>
+
+    <section>
+      <h2>Why it’s not obvious: the decoys</h2>
+      <p>To stop students spotting the pattern straight away, some of the “key” features also turn up where they don’t
+        help. They make tempting first questions that <i>almost</i> split the board in half, but not quite.</p>
+      <div class="decoys" id="decoys"></div>
+      <p class="muted small">Only “Is it a man?” (or “Is it a woman?”) splits all 16 into 8 and 8. With strategy hints
+        turned on, the game shows each question’s split, like <b>8|8</b> or <b>7|9</b>.</p>
+    </section>
+
+    <section>
+      <h2>Everyone at a glance</h2>
+      <div class="table-scroll"><table class="traits" id="traits"></table></div>
+      <p class="muted small"><span class="key-dot"></span> = a strategy feature for that person’s group ·
+        <span class="decoy-dot"></span> = a decoy</p>
+    </section>
+
+    <section class="lesson">
+      <h2>Lesson ideas</h2>
+      <ol>
+        <li><b>Play first, explain later.</b> Let students play a couple of rounds (or practice solo) and record how many
+          questions they needed before they knew the answer.</li>
+        <li><b>Find the best first question.</b> Ask: “Which question flips down the most faces <i>whatever</i> the
+          answer is?” Compare “Is it Grace?” (flips down 1 face or 15) with “Hat?” (7 or 9) and “Man?” (8 either way).</li>
+        <li><b>Play with hints.</b> Turn on <i>Strategy hints</i> in the lobby. The game shows how every question would
+          split the faces still standing and stars the best one.</li>
+        <li><b>Name the pattern.</b> 16 → 8 → 4 → 2 → 1. How many questions for 32 faces? 64? 1,000?
+          (5, 6, and 10, because 2¹⁰ = 1,024.)</li>
+        <li><b>Connect it.</b> Looking up a word in a dictionary, the “higher or lower” number game, and finding a
+          page in a book all work the same way.</li>
+      </ol>
+    </section>
+
+    <section class="howto-host">
+      <h2>Running a game</h2>
+      <ol>
+        <li>Click <b>Host a game</b>. You get a 4-character code and a QR code. Put it on the projector.</li>
+        <li>The student scans the QR code (or opens this site and types the code), enters their name, and joins.</li>
+        <li>You both pick a mystery person, and the student asks first. Questions from the list are answered
+          automatically. Typed questions are answered by the other player.</li>
+        <li>For the next student, open the menu (☰) and choose <b>Invite a different student</b>. To run several games at
+          once, open the site in more browser tabs. Each tab hosts its own game with its own code.</li>
+        <li>Students can also host games for each other. Anyone can click <b>Host a game</b>.</li>
+      </ol>
+      <p class="muted small">Games connect the two browsers directly (peer-to-peer). Nothing is stored on a server and no
+        accounts are needed. If someone loses connection or refreshes, they reconnect to the same game automatically
+        while the host’s page stays open.</p>
+    </section>
+  </main>
+
+  <script src="js/characters.js"></script>
+  <script src="js/avatar.js"></script>
+  <script src="js/guide.js"></script>
+</body>
+</html>

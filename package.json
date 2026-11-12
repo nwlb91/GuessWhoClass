@@ -1,0 +1,13 @@
+{
+  "name": "whos-hiding",
+  "private": true,
+  "description": "A two-player guess-the-mystery-person game for teaching binary search. Static site: no build step.",
+  "scripts": {
+    "test": "node tests/run-tests.js",
+    "test:e2e": "node tests/e2e.js"
+  },
+  "devDependencies": {
+    "peer": "1.0.2",
+    "playwright": "^1.40.0"
+  }
+}
