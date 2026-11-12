@@ -86,13 +86,39 @@ test('the four questions on the 3rd level are all different', () => {
   assert.strictEqual(new Set(level2).size, 4, level2.join(','));
 });
 
+test('in every group of 6+ people, the tree question is the ONLY one that splits it in half', () => {
+  nodes.forEach(({ node }) => {
+    const people = data.leavesOf(node);
+    if (people.length < 6) return;
+    const perfect = data.QUESTIONS.filter((q) => data.isHalving(people.length, data.split(q.id, people).yes)).map((q) => q.id);
+    const allowed = node.q === 'man' ? ['man', 'woman'] : [node.q];
+    assert.deepStrictEqual(perfect.sort(), allowed.sort(), `${people.length} people under "${node.q}"`);
+  });
+});
+
+test('plenty of questions to choose from, most of them about rare features', () => {
+  assert.ok(data.QUESTIONS.length >= 30, `${data.QUESTIONS.length} questions`);
+  const rare = data.QUESTIONS.filter((q) => where(q.id).length <= 6).length;
+  assert.ok(rare >= 20, `${rare} questions are about 6 or fewer people`);
+});
+
 test('decoys: hats, glasses, earrings and necklaces also appear where they are not asked', () => {
   const women = where('woman'), men = where('man');
-  assert.strictEqual(where('hat', women).length, 4);
-  assert.strictEqual(where('glasses', women).length, 4);
+  assert.strictEqual(where('hat', women).length, 3);
+  assert.strictEqual(where('glasses', women).length, 2);
   assert.strictEqual(where('earrings', men).length, 3);
   assert.strictEqual(where('necklace', men).length, 2);
-  assert.ok(where('stripes').length >= 6);
+});
+
+test('features never hide each other in the pictures', () => {
+  data.CHARACTERS.forEach((c) => {
+    const id = c.id;
+    assert.ok(!(c.hat && (c.bow || c.headband || c.headphones || c.flower)), id + ': hat hides hair things');
+    assert.ok(!(c.headphones && (c.earrings || c.bow)), id + ': headphones cover ears and bow');
+    assert.ok(!(c.beard && (c.freckles || c.bandage || c.teeth)), id + ': beard covers cheeks and mouth');
+    assert.ok(!(c.tie && c.necklace), id + ': tie and necklace overlap');
+    assert.ok(!(c.bow && (c.flower || c.headband)), id + ': too much in the hair');
+  });
 });
 
 test('only "man"/"woman" split all 24 into 12|12', () => {

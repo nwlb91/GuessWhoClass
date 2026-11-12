@@ -55,7 +55,7 @@
 
   // ---------- tempting first questions ----------
   var ids = data.BOARD.map(function (c) { return c.id; });
-  var tempting = ['man', 'hat', 'glasses', 'earrings', 'necklace', 'stripes', 'hair-black', 'beard', 'bow'];
+  var tempting = ['man', 'hat', 'earrings', 'hair-black', 'glasses', 'necklace', 'teeth', 'beard', 'bow', 'tie', 'freckles'];
   var box = document.getElementById('first-splits');
   box.innerHTML = tempting.map(function (qid) {
     var sp = data.split(qid, ids);

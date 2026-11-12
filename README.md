@@ -24,10 +24,18 @@ That's 24 → 12 → 6 → 3 → 2 or 1 → 1, so the mystery person is always f
 the other 16 in 5). 24 isn't a power of 2, so a group of 3 can only split 1 and 2. Four questions can only tell
 2⁴ = 16 people apart, but five can tell 32 apart.
 
-The tree also hides the pattern. After “Hat? yes” you ask about glasses, but after “Hat? no” you ask about a beard.
-The same feature means different things in different branches: a hat is the 2nd question for men, the 3rd for women
-with earrings, and just a decoy for other women. Tempting first questions like “Hat?” or “Glasses?” split 10 vs 14.
-Only “Is it a man?” splits the board 12 vs 12.
+The cast is also built so that **you can't stumble into halving by luck**:
+
+- There are 32 questions to choose from: hats, glasses, beards, earrings, necklaces, bows, ties, star badges,
+  striped and polka-dot shirts, big smiles, freckles, bandages, headphones, headbands, flowers, and hair and
+  shirt colors. Most of them are about only a few people.
+- In every big group (all 24, a group of 12, or a group of 6), the tree's question is the **only** one that
+  splits the group exactly in half. Everything else splits it unevenly, like 9 vs 15 or 2 vs 4.
+- The next question depends on the answer. After “Hat? yes” you ask about glasses, but after “Hat? no” glasses
+  would only split the group 1 vs 5, so you ask about a beard instead.
+
+In simulated games, a player picking questions at random needs about 6 questions on average, and sometimes 10 or
+more. A player following the tree always needs 4 or 5.
 
 The **teacher guide** (`guide.html`, linked from the home screen) draws the whole tree with every face, shows each
 person's path of questions, and has lesson ideas. The tree is defined in one place (`STRATEGY.tree` in
@@ -60,7 +68,7 @@ Any other static host works too (Netlify, Cloudflare Pages, a school web server)
 More tips:
 
 - **Strategy hints** (a toggle in the lobby or in the top bar) show how each question would split the faces still
-  standing, for example `12|12` or `10|14`, and star the tree's next question. **Only the host sees hints.** The
+  standing, for example `12|12` or `9|15`, and star the tree's next question. **Only the host sees hints.** The
   student's device is never sent them, so you can project your screen and think aloud.
 - **Players confirm answers** (lobby or ☰ menu): when someone asks a question from the list, the other player sees
   the true answer for their mystery person and taps **Send**. Only the true answer can be sent, but both players

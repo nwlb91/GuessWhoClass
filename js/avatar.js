@@ -182,7 +182,7 @@
   }
 
   function stripes(c) {
-    if (!c.stripes) return '';
+    if (c.pattern !== 'stripes') return '';
     var out = '';
     [93, 99.5, 106].forEach(function (y0) {
       var y1 = y0 + 3.2;
@@ -191,6 +191,78 @@
         ' L' + (100 - b).toFixed(1) + ' ' + y1 + ' L' + b.toFixed(1) + ' ' + y1 + ' Z"/>';
     });
     return out;
+  }
+
+  function dots(c) {
+    if (c.pattern !== 'dots') return '';
+    var out = '';
+    [95.5, 101.5, 107.5].forEach(function (y, row) {
+      var left = shirtLeftX(y) + 3;
+      for (var x = left + (row % 2 ? 3.3 : 0); x <= 100 - left; x += 6.6) {
+        out += '<circle cx="' + x.toFixed(1) + '" cy="' + y + '" r="1.7" fill="#FFFFFF" opacity="0.92"/>';
+      }
+    });
+    return out;
+  }
+
+  function tie(c) {
+    if (!c.tie) return '';
+    var dk = shade(c.tie, -0.35);
+    return '<path fill="#FFFFFF" stroke="#B9B9C4" stroke-width="0.6" d="M43 85 L49.2 91 L44.6 93.4 Z M57 85 L50.8 91 L55.4 93.4 Z"/>' +
+      '<path fill="' + c.tie + '" stroke="' + dk + '" stroke-width="0.8" stroke-linejoin="round" d="M47.6 89.2 L52.4 89.2 L51.5 93 L48.5 93 Z"/>' +
+      '<path fill="' + c.tie + '" stroke="' + dk + '" stroke-width="0.8" stroke-linejoin="round" d="M48.5 93 L46.8 105.5 L50 109.5 L53.2 105.5 L51.5 93 Z"/>';
+  }
+
+  function badge(c) {
+    if (!c.badge) return '';
+    var pts = [];
+    for (var i = 0; i < 10; i++) {
+      var a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 1.6 : 3.6;
+      pts.push((37 + r * Math.cos(a)).toFixed(2) + ' ' + (100.5 + r * Math.sin(a)).toFixed(2));
+    }
+    return '<circle cx="37" cy="100.5" r="5" fill="#FFFFFF" stroke="#2B2B2B" stroke-width="0.9"/>' +
+      '<path fill="#F2B21B" stroke="#B07A00" stroke-width="0.5" d="M' + pts.join(' L') + ' Z"/>';
+  }
+
+  function freckles(c) {
+    if (!c.freckles) return '';
+    var out = '';
+    [[35.5, 59.5], [38.6, 60.6], [36.2, 62.6], [39.4, 63.2]].forEach(function (p) {
+      out += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="1.25" fill="#A0522D" opacity="0.85"/>' +
+             '<circle cx="' + (100 - p[0]) + '" cy="' + p[1] + '" r="1.25" fill="#A0522D" opacity="0.85"/>';
+    });
+    return out;
+  }
+
+  function bandage(c) {
+    if (!c.bandage) return '';
+    return '<g transform="rotate(-28 63.5 62)"><rect x="58.3" y="59.9" width="10.4" height="4.4" rx="2.1" fill="#F7E1C7" stroke="#9C6B42" stroke-width="0.8"/>' +
+      '<rect x="61.9" y="59.9" width="3.2" height="4.4" fill="#E2B88D"/></g>';
+  }
+
+  function headband(c) {
+    if (!c.headband) return '';
+    return '<path fill="none" stroke="' + c.headband + '" stroke-width="4.2" stroke-linecap="round" d="M31.3 43 C31.6 26.5 68.4 26.5 68.7 43"/>' +
+      '<path fill="none" stroke="' + shade(c.headband, -0.3) + '" stroke-width="0.7" d="M31.6 40.6 C32.4 25 67.6 25 68.4 40.6"/>';
+  }
+
+  function headphones(c) {
+    if (!c.headphones) return '';
+    var cup = 'fill="' + c.headphones + '" stroke="#2B2B2B" stroke-width="1.2"';
+    return '<path fill="none" stroke="#2B2B2B" stroke-width="3.2" stroke-linecap="round" d="M27.6 50 C25 16 75 16 72.4 50"/>' +
+      '<rect x="23.6" y="46.5" width="9" height="15" rx="4" ' + cup + '/>' +
+      '<rect x="67.4" y="46.5" width="9" height="15" rx="4" ' + cup + '/>';
+  }
+
+  function flower(c) {
+    if (!c.flower) return '';
+    var out = '';
+    for (var i = 0; i < 5; i++) {
+      var a = -Math.PI / 2 + i * 2 * Math.PI / 5;
+      out += '<circle cx="' + (34.5 + 3.3 * Math.cos(a)).toFixed(2) + '" cy="' + (31 + 3.3 * Math.sin(a)).toFixed(2) +
+        '" r="2.8" fill="' + c.flower + '" stroke="' + shade(c.flower, -0.3) + '" stroke-width="0.6"/>';
+    }
+    return out + '<circle cx="34.5" cy="31" r="2.1" fill="#F3C233" stroke="#C58F00" stroke-width="0.5"/>';
   }
 
   function quadPoint(t, p0, p1, p2) {
@@ -263,7 +335,10 @@
     // nose
     out += '<path fill="none" stroke="' + shade(skin, -0.28) + '" stroke-width="1.6" stroke-linecap="round" d="M50.5 55 Q47.6 60.5 50.8 61.2"/>';
     // mouth (bearded men get theirs drawn with the beard)
-    if (!c.beard) {
+    if (!c.beard && c.teeth) {
+      out += '<path fill="#8E2F3A" d="M43.4 64.6 Q50 74.5 56.6 64.6 Z"/>' +
+             '<path fill="#FFFFFF" d="M44.5 65.1 L55.5 65.1 Q55.1 68 50 68.3 Q44.9 68 44.5 65.1 Z"/>';
+    } else if (!c.beard) {
       out += isWoman
         ? '<path fill="#C9475A" d="M43.5 65.5 Q50 72.5 56.5 65.5 Q50 67.6 43.5 65.5 Z"/>'
         : '<path fill="none" stroke="#7A3A30" stroke-width="2" stroke-linecap="round" d="M44.5 66 Q50 70.5 55.5 66"/>';
@@ -288,8 +363,11 @@
       '<path fill="' + shirt + '" stroke="' + shade(shirt, -0.25) + '" stroke-width="1" d="M8 111 C10 93 26 85 43 85 Q50 95 57 85 C74 85 90 93 92 111 Z"/>',
       '<path fill="none" stroke="' + shade(shirt, -0.25) + '" stroke-width="1" d="M43 85 Q50 95 57 85"/>',
       stripes(c),
+      dots(c),
+      tie(c),
       necklace(c),
       hairCol ? hairLocks(c, hairCol) : '',
+      badge(c),
       // head
       '<ellipse cx="50" cy="52" rx="20" ry="24" fill="' + skin + '"/>',
       hairCol || c.hairStyle === 'bald' ? hairFront(c, hairCol || skin) : '',
@@ -298,10 +376,15 @@
       '<circle cx="70" cy="54" r="4.6" fill="' + skin + '" stroke="' + skinDk + '" stroke-width="0.8"/>',
       earrings(c),
       face(c, skin),
+      freckles(c),
+      bandage(c),
       hairCol ? beard(c, hairCol) : '',
       glasses(c),
+      headband(c),
+      headphones(c),
       hat(c),
-      bow(c)
+      bow(c),
+      flower(c)
     ];
     var cls = opts.className ? ' class="' + opts.className + '"' : '';
     return '<svg' + cls + ' viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + c.name + '">' +
